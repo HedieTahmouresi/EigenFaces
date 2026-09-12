@@ -23,10 +23,14 @@ Implemented:
   using the snapshot trick. The recovered components are checked against
   the 4096x4096 covariance matrix they stand in for: `max |C u - lambda u|`
   is 1.25e-15 over the top 10.
+- `src/classify.py` -- Euclidean 1-NN over arbitrary vectors (raw pixels or
+  eigenspace weights, so the baseline and the PCA result stay comparable),
+  and a rejection threshold calibrated on the training residual
+  distribution.
 - Figures: `figures/mean_face.png`, `figures/eigenfaces_top10.png`.
 
-Not yet implemented: `classify.py`, `corrupt.py`, `align.py`, `gallery.py`,
-every `experiments/exp_*.py` script, the notebook, and the Streamlit demo.
+Not yet implemented: `corrupt.py`, `align.py`, `gallery.py`, every
+`experiments/exp_*.py` script, the notebook, and the Streamlit demo.
 `results/results.md` currently holds empty per-experiment templates.
 
 ## Project layout
