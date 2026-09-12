@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eigenfaces"
+version = "0.1.0"
+description = "From-scratch PCA-based face recognition (Turk & Pentland, 1991)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+]
+
+[project.optional-dependencies]
+demo = ["streamlit", "opencv-python"]
+dev = ["jupyterlab", "pytest"]
+
+[tool.setuptools]
+packages = ["src"]
