@@ -39,7 +39,7 @@ Not yet implemented: `corrupt.py`, `align.py`, `gallery.py`, every
 src/            PCA, eigensolver, classifier, corruption, demo-only alignment/gallery
 experiments/    One script per experiment (E1-E8), each writes to figures/ and results/
 figures/        Generated figures, committed as they're produced
-results/        results.csv / results.md
+results/        results.md, one section per experiment
 notebook.ipynb  Clean narrative, imports from src/
 app.py          Streamlit demo, thin wrapper only
 ```
