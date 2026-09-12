@@ -10,8 +10,24 @@ independently.
 
 ## Status
 
-Implementation not started. See `results/results.md` once experiments have
-been run.
+The core pipeline is implemented and verified; the experiments are not yet
+written, so no recognition accuracy has been measured.
+
+Implemented:
+
+- `src/data.py` -- Olivetti loading, stratified 7/3-per-identity split,
+  flattening, and centering on the training mean.
+- `src/eigensolver.py` -- `solve_eigh` and the `solve` dispatcher
+  (`solve_power` is still a stub).
+- `src/model.py` -- `EigenfaceModel.fit/transform/reconstruct/residual`,
+  using the snapshot trick. The recovered components are checked against
+  the 4096x4096 covariance matrix they stand in for: `max |C u - lambda u|`
+  is 1.25e-15 over the top 10.
+- Figures: `figures/mean_face.png`, `figures/eigenfaces_top10.png`.
+
+Not yet implemented: `classify.py`, `corrupt.py`, `align.py`, `gallery.py`,
+every `experiments/exp_*.py` script, the notebook, and the Streamlit demo.
+`results/results.md` currently holds empty per-experiment templates.
 
 ## Project layout
 
@@ -37,6 +53,15 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,demo]"
 ```
 
+## Tests
+
+```bash
+pytest
+```
+
+Each `src/` module has a matching `tests/test_<module>.py`, written
+alongside it rather than retrofitted.
+
 ## Running experiments
 
 ```bash
@@ -46,7 +71,8 @@ python experiments/exp_accuracy_vs_k.py
 ```
 
 Each experiment script writes its figure(s) to `figures/` and appends a row
-to `results/results.md`.
+to `results/results.md`. These scripts are currently stubs and raise
+`NotImplementedError` -- see Status above.
 
 ## Demo
 
