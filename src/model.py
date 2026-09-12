@@ -27,6 +27,21 @@ class EigenfaceModel:
         """
         X_train = np.asarray(X_train, dtype=np.float64)
         n_train = X_train.shape[0]
+        # Guard the lower bound as well as the upper one. `solve()` truncates
+        # with `eigenvalues[:k]`, so a negative k is a negative slice index --
+        # fit(X, k=-5) would otherwise fit n_train - 5 components and report
+        # success, and k=0 would die on an empty `norms[0]` further down. Both
+        # are silent-wrong-number risks for the k sweeps in E2/E3.
+        if isinstance(k, bool) or not isinstance(k, (int, np.integer)):
+            raise ValueError(
+                f"k must be an integer, got {type(k).__name__}; valid range "
+                f"is 1 to n_train - 1 = {n_train - 1}"
+            )
+        if k < 1:
+            raise ValueError(
+                f"k={k} is not a usable number of components; valid range is "
+                f"1 to n_train - 1 = {n_train - 1}"
+            )
         if k > n_train:
             raise ValueError(
                 f"k={k} exceeds n_train={n_train}; the training cloud spans at "

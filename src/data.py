@@ -48,10 +48,17 @@ def stratified_split(images, labels, n_train_per_class=7, seed=0):
     test_idx = []
     for label in np.unique(labels):
         idx = np.flatnonzero(labels == label)
-        if len(idx) < n_train_per_class:
+        # `<=`, not `<`: at equality the identity has just enough images to
+        # train on and none left to test on. That used to pass silently, and
+        # an empty test split turns every downstream accuracy into nan
+        # ((predicted == y_test).mean() of an empty array) instead of failing.
+        if len(idx) <= n_train_per_class:
             raise ValueError(
-                f"identity {label} has {len(idx)} images, "
-                f"fewer than n_train_per_class={n_train_per_class}"
+                f"identity {label} has {len(idx)} images, which leaves "
+                f"{len(idx) - n_train_per_class} for the test split at "
+                f"n_train_per_class={n_train_per_class}; each identity needs "
+                f"at least n_train_per_class + 1 = {n_train_per_class + 1} "
+                f"images"
             )
         shuffled = rng.permutation(idx)
         train_idx.append(shuffled[:n_train_per_class])

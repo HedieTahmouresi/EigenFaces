@@ -102,6 +102,30 @@ def test_fit_rejects_k_past_the_rank_of_the_data(low_rank):
         EigenfaceModel().fit(low_rank, k=4)
 
 
+def test_fit_rejects_k_of_zero(low_rank):
+    with pytest.raises(ValueError, match="valid range"):
+        EigenfaceModel().fit(low_rank, k=0)
+
+
+def test_fit_rejects_negative_k(low_rank):
+    """A negative k is a negative slice index: it used to fit n_train - 5
+    components and report success, which would let the E2 sweep record an
+    accuracy against a k that was never fitted."""
+    with pytest.raises(ValueError, match="valid range"):
+        EigenfaceModel().fit(low_rank, k=-5)
+
+
+def test_fit_rejects_non_integer_k(low_rank):
+    with pytest.raises(ValueError, match="integer"):
+        EigenfaceModel().fit(low_rank, k=3.0)
+
+
+def test_fit_accepts_numpy_integer_k(low_rank):
+    """k often arrives from a numpy array or arange in the experiment sweeps."""
+    model = EigenfaceModel().fit(low_rank, k=np.int64(3))
+    assert model.components_.shape == (3, 200)
+
+
 # --- 2.4 transform / reconstruct ---------------------------------------
 
 

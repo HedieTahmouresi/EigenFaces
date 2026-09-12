@@ -111,6 +111,30 @@ def test_split_rejects_too_few_images_per_class():
         data.stratified_split(images, labels, n_train_per_class=7)
 
 
+def test_split_rejects_an_empty_test_split(synthetic):
+    """10 images per identity and n_train_per_class=10 used to return 400
+    train / 0 test with no complaint, which makes every downstream accuracy
+    nan rather than an error."""
+    images, labels = synthetic
+    with pytest.raises(ValueError, match="identity 0"):
+        data.stratified_split(images, labels, n_train_per_class=10)
+
+
+def test_split_names_the_identity_that_ran_out(synthetic):
+    """Only identity 7 is short, so the message must point at it."""
+    images, labels = synthetic
+    keep = np.ones(len(labels), dtype=bool)
+    keep[np.flatnonzero(labels == 7)[:4]] = False
+    with pytest.raises(ValueError, match="identity 7"):
+        data.stratified_split(images[keep], labels[keep], n_train_per_class=7)
+
+
+def test_split_still_allows_the_normal_seven_three_split(synthetic):
+    images, labels = synthetic
+    (X_train, _), (X_test, _) = data.stratified_split(images, labels)
+    assert len(X_train) == 280 and len(X_test) == 120
+
+
 # --- 1.3 flatten -------------------------------------------------------
 
 
