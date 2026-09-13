@@ -37,10 +37,22 @@ the number the PCA claim has to match at ~100x fewer dimensions.
 
 | Date | k | Accuracy | Notes |
 |---|---|---|---|
+| 2026-09-13 | 1 | 0.1250 | |
+| 2026-09-13 | 5 | 0.7333 | |
+| 2026-09-13 | 10 | 0.8667 | |
+| 2026-09-13 | 20 | 0.9250 | |
+| 2026-09-13 | 40 | 0.9167 | |
+| 2026-09-13 | 80 | 0.9333 | |
+| 2026-09-13 | 160 | 0.9333 | |
+| 2026-09-13 | 279 | 0.9250 | |
 
-**Saturation point:** _(record the smallest `k` that matches E1's accuracy,
-and the resulting dimensionality reduction factor -- this is the project's
-central claim.)_
+**Saturation point:** k=20 at or above E1's 0.9250 (rows appended 2026-09-13)
+-- 4096/20 ~= 205x fewer dimensions than the raw-pixel baseline. This is the
+project's central claim. Accuracy plateaus from k=20 onward (111-112 of 120
+test faces); the one-face drops at k=40 and k=279 are held-out quantization,
+not a decomposition bug -- the checklist was verified clean: eigenvalues
+descending, `max |C u - lambda u| = 3.1e-15` in pixel space, and E3's
+reconstruction MSE (same bases) monotonic.
 
 ---
 
