@@ -22,6 +22,13 @@ import numpy as np
 from src import classify, data
 
 N_IDENTITIES = 40
+#: R13: an independent rerun of this experiment measured query latency ~30%
+#: lower than the committed number -- wall-clock timing shares the machine
+#: with whatever else is running, unlike every other number in results.md,
+#: which reproduces exactly. Repeating the full sweep and reporting the
+#: spread across repeats, rather than a single pass's mean, makes that
+#: variance visible instead of quietly reporting one point estimate.
+N_TIMING_REPEATS = 5
 #: Chance level for 1-NN: each test face has one correct identity among the
 #: 40, and 1-NN always returns one of them.
 CHANCE_LEVEL = 1.0 / N_IDENTITIES
@@ -42,13 +49,11 @@ def load_split():
 
 
 def measure_query_times(X_train, y_train, queries):
-    """Per-query 1-NN latency in ms, one query per call.
+    """Per-query 1-NN latency in ms, one query per call, for a single sweep.
 
     The demo path classifies a single uploaded image at a time, so the
     number E1 exists to record is the latency of a one-query call, not the
-    amortized cost of a batch matrix product. Returns (n_query,) times; the
-    results table reports the mean, the median goes to stdout as a check
-    against a single slow outlier call dragging the mean.
+    amortized cost of a batch matrix product. Returns (n_query,) times.
     """
     times_ms = np.empty(queries.shape[0])
     for i in range(queries.shape[0]):
@@ -56,6 +61,25 @@ def measure_query_times(X_train, y_train, queries):
         classify.nearest_neighbor(X_train, y_train, queries[i : i + 1])
         times_ms[i] = (time.perf_counter() - start) * 1e3
     return times_ms
+
+
+def repeated_query_time_stats(X_train, y_train, queries, n_repeats=N_TIMING_REPEATS):
+    """Mean per-query latency of `n_repeats` independent full sweeps.
+
+    A single sweep's mean is one point estimate of a wall-clock measurement
+    that shares the machine with everything else running (R13). Repeating
+    the whole sweep surfaces run-to-run variance that a single pass hides;
+    within a sweep, the per-query median (not returned here, but cheap to
+    recompute from `measure_query_times`) already guards against one slow
+    outlier call dragging that sweep's mean.
+
+    Returns
+    -------
+    repeat_means_ms : (n_repeats,) array, one mean ms/query per sweep
+    """
+    return np.array(
+        [measure_query_times(X_train, y_train, queries).mean() for _ in range(n_repeats)]
+    )
 
 
 def check_accuracy_sanity(accuracy):
@@ -115,18 +139,23 @@ def main():
     check_accuracy_sanity(accuracy)
     print(f"raw-pixel 1-NN accuracy: {accuracy:.4f} (chance {CHANCE_LEVEL:.4f})")
 
-    times_ms = measure_query_times(X_train, y_train, X_test)
-    ms_per_query = float(times_ms.mean())
+    repeat_means = repeated_query_time_stats(X_train, y_train, X_test)
+    ms_per_query = float(repeat_means.mean())
+    ms_stdev = float(repeat_means.std(ddof=1))
     print(
-        f"query latency: {ms_per_query:.3f} ms/query mean, "
-        f"{float(np.median(times_ms)):.3f} median over {times_ms.size} queries"
+        f"query latency: {ms_per_query:.3f} +/- {ms_stdev:.3f} ms/query "
+        f"({N_TIMING_REPEATS} sweeps of {X_test.shape[0]} single-query calls "
+        f"each; per-sweep means: {', '.join(f'{m:.3f}' for m in repeat_means)})"
     )
 
     append_results(
         accuracy,
         X_train.shape[1],
         ms_per_query,
-        f"no PCA, no centering; mean of {times_ms.size} single-query calls",
+        f"no PCA, no centering; mean of {N_TIMING_REPEATS} repeated sweeps of "
+        f"{X_test.shape[0]} single-query calls each, stdev {ms_stdev:.3f} ms "
+        "across sweeps (wall-clock timing, machine-load sensitive -- see "
+        "decisions.md R13)",
     )
     print("appended 1 row to results/results.md")
 

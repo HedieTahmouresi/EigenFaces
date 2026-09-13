@@ -10,6 +10,7 @@ real model fit. See remediation.md R11 / roadmap Job 6.5.3.
 Requires tests/conftest.py to put experiments/ on sys.path.
 """
 
+import numpy as np
 import pytest
 
 import exp_accuracy_vs_k
@@ -32,6 +33,25 @@ def test_accuracy_sanity_raises_at_the_floor():
 def test_accuracy_sanity_raises_below_floor():
     with pytest.raises(RuntimeError, match="chance"):
         exp_baseline.check_accuracy_sanity(0.03)
+
+
+# --- exp_baseline.repeated_query_time_stats (R13) -----------------------
+
+
+def test_repeated_query_time_stats_returns_one_mean_per_repeat():
+    """Tiny synthetic data, not real Olivetti -- this checks the repeat/mean
+    bookkeeping, not actual latency numbers."""
+    rng = np.random.default_rng(0)
+    X_train = rng.normal(size=(10, 8))
+    y_train = np.arange(10)
+    queries = X_train[:4]
+
+    repeat_means = exp_baseline.repeated_query_time_stats(
+        X_train, y_train, queries, n_repeats=3
+    )
+    assert repeat_means.shape == (3,)
+    assert np.all(np.isfinite(repeat_means))
+    assert np.all(repeat_means >= 0)
 
 
 # --- exp_accuracy_vs_k.check_curve_shape --------------------------------
