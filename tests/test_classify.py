@@ -177,3 +177,54 @@ def test_noise_images_are_rejected_but_real_faces_are_not(olivetti_split):
 
     assert classify.reject(model.residual(noise), threshold).all()
     assert classify.reject(model.residual(X_test), threshold).mean() < 0.5
+
+
+# --- 6.5.2 compute_threshold_calibrated ---------------------------------
+
+
+@pytest.mark.parametrize("k", [10, 40, 80, 160])
+def test_calibrated_threshold_keeps_test_rejection_low_across_k(olivetti_split, k):
+    """Regression for R7/R10: the naive threshold rejects 78-100% of real
+    test faces at k=80-160, exactly where E2 says accuracy peaks. The
+    calibrated threshold must stay well below that at every k E2 considered,
+    not just the k=40 value the old pinned test happened to still pass at.
+    """
+    X_train, y_train, X_test, _ = olivetti_split
+    model = EigenfaceModel().fit(X_train, k=k)
+    threshold = classify.compute_threshold_calibrated(X_train, y_train, k=k)
+    assert classify.reject(model.residual(X_test), threshold).mean() < 0.2
+
+
+def test_calibrated_threshold_still_rejects_noise(olivetti_split):
+    X_train, y_train, _, _ = olivetti_split
+    k = 160
+    model = EigenfaceModel().fit(X_train, k=k)
+    threshold = classify.compute_threshold_calibrated(X_train, y_train, k=k)
+
+    rng = np.random.default_rng(0)
+    noise = rng.uniform(*data.PIXEL_RANGE, size=(20, data.N_PIXELS))
+    assert classify.reject(model.residual(noise), threshold).all()
+
+
+def test_calibrated_threshold_is_deterministic(olivetti_split):
+    X_train, y_train, _, _ = olivetti_split
+    first = classify.compute_threshold_calibrated(X_train, y_train, k=40)
+    second = classify.compute_threshold_calibrated(X_train, y_train, k=40)
+    assert first == second
+
+
+def test_calibrated_threshold_rejects_k_past_calibration_rank(olivetti_split):
+    """k=279 spans the full training set, so holding back even one image per
+    identity to calibrate on necessarily drops the calibration model's rank
+    below it -- this must fail loudly, not silently calibrate at a lower k.
+    """
+    X_train, y_train, _, _ = olivetti_split
+    with pytest.raises(ValueError, match="exceeds the rank"):
+        classify.compute_threshold_calibrated(X_train, y_train, k=279)
+
+
+def test_calibrated_threshold_rejects_uneven_class_counts():
+    y_train = np.array([0, 0, 0, 1, 1])
+    X_train = np.zeros((5, 10))
+    with pytest.raises(ValueError, match="equal number of images"):
+        classify.compute_threshold_calibrated(X_train, y_train, k=1)
