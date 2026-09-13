@@ -107,15 +107,27 @@ def check_monotonic(mse_rows):
         )
 
 
+def _find(text, marker, start=0):
+    """`text.index`, but a miss names this script and the marker it wanted."""
+    idx = text.find(marker, start)
+    if idx == -1:
+        raise RuntimeError(
+            f"exp_reconstruction.append_results: expected marker {marker!r} "
+            f"not found in {RESULTS_PATH} -- has the results.md template "
+            "changed?"
+        )
+    return idx
+
+
 def append_results(mse_rows):
     """Append one row per k to E3's table in results.md, without overwriting."""
     today = date.today().isoformat()
     new_lines = [f"| {today} | {k} | {mse:.6f} | |" for k, mse in mse_rows]
 
     text = RESULTS_PATH.read_text()
-    section_idx = text.index("## E3 -- Reconstruction vs. k")
-    sep_idx = text.index("|---|---|---|---|", section_idx)
-    insert_at = text.index("\n", sep_idx) + 1
+    section_idx = _find(text, "## E3 -- Reconstruction vs. k")
+    sep_idx = _find(text, "|---|---|---|---|", section_idx)
+    insert_at = _find(text, "\n", sep_idx) + 1
     new_text = text[:insert_at] + "\n".join(new_lines) + "\n" + text[insert_at:]
     RESULTS_PATH.write_text(new_text)
 

@@ -146,15 +146,27 @@ def build_plot(accuracy_rows, baseline_accuracy):
     return fig
 
 
+def _find(text, marker, start=0):
+    """`text.index`, but a miss names this script and the marker it wanted."""
+    idx = text.find(marker, start)
+    if idx == -1:
+        raise RuntimeError(
+            f"exp_accuracy_vs_k.append_results: expected marker {marker!r} "
+            f"not found in {RESULTS_PATH} -- has the results.md template "
+            "changed?"
+        )
+    return idx
+
+
 def append_results(accuracy_rows, saturation_k, baseline_accuracy):
     """Append one row per k, then fill the saturation note, in E2's section."""
     today = date.today().isoformat()
     new_lines = [f"| {today} | {k} | {acc:.4f} | |" for k, acc in accuracy_rows]
 
     text = RESULTS_PATH.read_text()
-    section_idx = text.index("## E2 -- Accuracy vs. k")
-    sep_idx = text.index("|---|---|---|---|", section_idx)
-    insert_at = text.index("\n", sep_idx) + 1
+    section_idx = _find(text, "## E2 -- Accuracy vs. k")
+    sep_idx = _find(text, "|---|---|---|---|", section_idx)
+    insert_at = _find(text, "\n", sep_idx) + 1
     text = text[:insert_at] + "\n".join(new_lines) + "\n" + text[insert_at:]
 
     peak = max(acc for _, acc in accuracy_rows)
@@ -165,8 +177,16 @@ def append_results(accuracy_rows, saturation_k, baseline_accuracy):
     # is already filled and there is no ")_" to find -- per results.md's
     # append-and-annotate convention, add a dated re-run note instead of
     # overwriting or crashing.
-    note_start = text.index("**Saturation point:**", section_idx)
-    note_close = text.find(")_", note_start)
+    note_start = _find(text, "**Saturation point:**", section_idx)
+    # Bounded to this section only: an unbounded `.find` here previously
+    # matched the *next* file's ")_" (E4's linking-observation placeholder)
+    # whenever E2's own note was already filled, silently deleting every
+    # section in between. The section ends at the next "---" divider, or at
+    # EOF if results.md's layout ever drops it.
+    section_end = text.find("\n---", note_start)
+    if section_end == -1:
+        section_end = len(text)
+    note_close = text.find(")_", note_start, section_end)
     if note_close != -1:
         if saturation_k is not None:
             reduction = E1_DIMENSIONS / saturation_k

@@ -71,6 +71,22 @@ def check_accuracy_sanity(accuracy):
         )
 
 
+def _find(text, marker, start=0):
+    """`text.index`, but a miss names this script and the marker it wanted.
+
+    A bare `ValueError: substring not found` gives no clue which of several
+    lookups failed or why -- this is the difference between "results.md's
+    template changed under exp_baseline.py" and a silent no-op.
+    """
+    idx = text.find(marker, start)
+    if idx == -1:
+        raise RuntimeError(
+            f"exp_baseline.append_results: expected marker {marker!r} not "
+            f"found in {RESULTS_PATH} -- has the results.md template changed?"
+        )
+    return idx
+
+
 def append_results(accuracy, dimensions, ms_per_query, notes):
     """Append one row to E1's table in results.md, without overwriting."""
     today = date.today().isoformat()
@@ -79,13 +95,13 @@ def append_results(accuracy, dimensions, ms_per_query, notes):
     )
 
     text = RESULTS_PATH.read_text()
-    section_idx = text.index("## E1 -- Raw-pixel baseline")
+    section_idx = _find(text, "## E1 -- Raw-pixel baseline")
     # E1's own separator is the first table rule after its heading. Searching
     # from section_idx (not the file start) means a `|---|` in an earlier
     # section can't be picked up, and the prefix `|---|` rather than a full
     # dash count keeps this working if the table gains a column.
-    sep_idx = text.index("|---|", section_idx)
-    insert_at = text.index("\n", sep_idx) + 1
+    sep_idx = _find(text, "|---|", section_idx)
+    insert_at = _find(text, "\n", sep_idx) + 1
     new_text = text[:insert_at] + new_line + "\n" + text[insert_at:]
     RESULTS_PATH.write_text(new_text)
 
