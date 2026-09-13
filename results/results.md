@@ -27,6 +27,7 @@ the number the PCA claim has to match at ~100x fewer dimensions.
 
 | Date | Accuracy | Dimensions | Query time (ms/query) | Notes |
 |---|---|---|---|---|
+| 2026-09-13 | 0.9250 | 4096 | 3.270 | no PCA, no centering; mean of 120 single-query calls |
 
 ---
 
